@@ -7,7 +7,7 @@ type
     gkMultiGraph = "MultiGraph"
     gkMultiDiGraph = "MultiDiGraph"
 
-  Graph*[T, W=int] = ref object
+  Graph*[T, W=SomeNumber] = ref object
     nodes: Table[T, W]
     case kind: GraphKind
     of gkGraph, gkDiGraph:
@@ -106,13 +106,13 @@ proc add_edge*[T, W](graph; u, v: T, weight: W = 1) =
   of gkDiGraph:
     graph.adj[u][v] = weight
   of gkMultiGraph:
-    graph
-    .multiadj[u]
-    .mgetOrPut(v, Table[int, W]())[graph.uid] = weight
+    if v notin graph.multiadj[u]:
+      graph.multiadj[u][v] = Table[int, W]()
+    if u notin graph.multiadj[v]:
+      graph.multiadj[v][u] = Table[int, W]()
 
-    graph
-    .multiadj[v]
-    .mgetOrPut(u, Table[W, int]())[graph.uid] = weight
+    graph.multiadj[u][v][graph.uid] = weight
+    graph.multiadj[v][u][graph.uid] = weight
 
     inc graph.uid
   of gkMultiDiGraph:
