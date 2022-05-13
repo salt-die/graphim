@@ -20,13 +20,13 @@ type
 
 using graph: Graph
 
-iterator nodes*[T](graph): T =
+iterator nodes*[T; W: SomeNumber](graph: Graph[T, W]): T =
   for node, _ in graph.nodes: yield node
 
-iterator node_weights*[T, W](graph): (T, W) =
+iterator node_weights*[T; W: SomeNumber](graph: Graph[T, W]): (T, W) =
   for node, weight in graph.nodes: yield (node, weight)
 
-iterator edges*[T, W](graph: Graph[T, W]): (T, T) =
+iterator edges*[T; W: SomeNumber](graph: Graph[T, W]): (T, T) =
   case graph.kind
   of gkGraph:
     var seen = HashSet[(T, T)]()
@@ -53,7 +53,7 @@ iterator edges*[T, W](graph: Graph[T, W]): (T, T) =
         for _ in 0..<unique.len:
           yield (node, neighbor)
 
-iterator edge_weights*[T, W](graph: Graph[T, W]): (T, T, W) =
+iterator edge_weights*[T; W: SomeNumber](graph: Graph[T, W]): (T, T, W) =
   case graph.kind
   of gkGraph:
     var seen = HashSet[(T, T)]()
@@ -80,7 +80,7 @@ iterator edge_weights*[T, W](graph: Graph[T, W]): (T, T, W) =
         for _, weight in unique:
           yield (node, neighbor, weight)
 
-proc add_node*[T, W](graph; node: T, weight: W = 1) =
+proc add_node*[T; W: SomeNumber](graph; node: T, weight: W = 1) =
   graph.nodes[node] = weight
   case graph.kind
   of gkGraph, gkDiGraph:
