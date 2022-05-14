@@ -123,10 +123,11 @@ proc initGraph*[T; W: SomeNumber](kind: GraphKind): Graph[T, W] =
   of gkGraph, gkDiGraph:
     result = Graph[T, W](kind: kind, nodes: Table[T, W](), adj: Adj[T, W]())
   of gkMultiGraph, gkMultiDiGraph:
-    result = Graph[T, W](kind: kind, nodes: Table[T, W](), multiadj: MultiAdj[T, W]())
+    result = Graph[T, W](kind: kind, nodes: Table[T, W](), multiadj: MultiAdj[T, W](), uid: 0)
 
 macro and_iterators_too(body: untyped): untyped =
-  var iterator_procs: seq[NimNode] = @[]
+  ## Procs defined for openArray types will also be defined for iterators.
+  var procs_for_iterators: seq[NimNode] = @[]
 
   for node in body:
     if node.kind == nnkProcDef:
@@ -135,15 +136,15 @@ macro and_iterators_too(body: untyped): untyped =
         if (
           identifier.kind == nnkIdentDefs and
           identifier[1].kind == nnkBracketExpr and
-          identifier[1][0] == ident"openArray"
+          identifier[1][0].eqIdent "openArray"
         ):
           identifier[1] = nnkIteratorTy.newTree(
             nnkFormalParams.newTree identifier[1][1],
             newEmptyNode(),
           )
-      iterator_procs.add new_proc
+      procs_for_iterators.add new_proc
 
-  for node in iterator_procs:
+  for node in procs_for_iterators:
     body.add node
 
   result = body
