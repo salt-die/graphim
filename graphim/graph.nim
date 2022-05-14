@@ -1,4 +1,5 @@
 import std/[macros, sets, strformat, tables]
+import /and_iterators_too
 
 type
   GraphKind* = enum
@@ -91,7 +92,14 @@ proc add_node*[T; W: SomeNumber](graph; node: T, weight: W = 1) =
       graph.multiadj[node] = Table[T, Table[int, W]]()
 
 proc contains*[T](graph; node: T): bool =
+  ## Return true if node is in the graph.
   node in graph.nodes
+
+proc contains*[T](graph; u, v: T): bool =
+  ## Return true if edge (u, v) is in the graph.
+  case graph.kind
+  of gkGraph, gkDiGraph: u in graph.nodes and v in graph.adj[u]
+  of gkMultiGraph, gkMultiDiGraph: u in graph.nodes and v in graph.multiadj[u]
 
 proc add_edge*[T; W: SomeNumber](graph; u, v: T, weight: W = 1) =
   if u notin graph: graph.add_node(u, 1.W)
@@ -125,30 +133,6 @@ proc initGraph*[T; W: SomeNumber](kind: GraphKind): Graph[T, W] =
   of gkMultiGraph, gkMultiDiGraph:
     result = Graph[T, W](kind: kind, nodes: Table[T, W](), multiadj: MultiAdj[T, W](), uid: 0)
 
-macro and_iterators_too(body: untyped): untyped =
-  ## Procs defined for openArray types will also be defined for iterators.
-  var procs_for_iterators: seq[NimNode] = @[]
-
-  for node in body:
-    if node.kind == nnkProcDef:
-      var new_proc = node.copyNimTree
-      for identifier in new_proc[3]:
-        if (
-          identifier.kind == nnkIdentDefs and
-          identifier[1].kind == nnkBracketExpr and
-          identifier[1][0].eqIdent "openArray"
-        ):
-          identifier[1] = nnkIteratorTy.newTree(
-            nnkFormalParams.newTree identifier[1][1],
-            newEmptyNode(),
-          )
-      procs_for_iterators.add new_proc
-
-  for node in procs_for_iterators:
-    body.add node
-
-  result = body
-
 and_iterators_too:
   proc add_nodes_from*[T](graph; graph_data: openArray[T]) =
     for node in graph_data: graph.add_node(node)
@@ -179,8 +163,10 @@ and_iterators_too:
     result.add_edges_from(graph_data)
 
 proc order*(graph): int = graph.nodes.len
+  ## Total number of nodes.
 
 proc degree*[T](graph; node: T): int =
+  ## Degree of a node.
   case graph.kind
   of gkGraph: result = graph.adj[node].len + int(node in graph.adj[node])
   of gkDiGraph: result = graph.adj[node].len
@@ -189,18 +175,16 @@ proc degree*[T](graph; node: T): int =
       result.inc neighbor.len
 
 proc size*(graph): int =
+  ## Total number of edges.
   case graph.kind
   of gkGraph, gkDiGraph, gkMultiDiGraph:
     for node, _ in graph.nodes: result += graph.degree node
-    if graph.kind == gkGraph:
-      result = result div 2
+    if graph.kind == gkGraph: result = result div 2
   of gkMultiGraph:
     var seen = HashSet[int]()
     for node, neighbors in graph.multiadj:
       for neighbor, unique in neighbors:
-        for uid, _ in unique:
-          if uid notin seen:
-            seen.incl uid
+        for uid, _ in unique: seen.incl uid
     result = seen.len
 
 proc `$`*(graph): string =
@@ -245,11 +229,18 @@ when isMainModule:
   # let edge_list = [(0, 0), (0, 1), (1, 0), (0, 2), (0, 3), (2, 3), (2, 3)]
   let edge_list = @[('a', 'a'), ('a', 'b'), ('b', 'a'), ('a', 'c'), ('a', 'd'), ('c', 'd'), ('c', 'd')]
   echo "edge list: ", edge_list
-  # iterator my_iter(): (int, int) {.closure.}=
-  #   yield (0, 0)
-  #   yield (1, 1)
+
+  iterator my_iter(): (int, int) {.closure.}=
+    yield (0, 0)
+    yield (1, 1)
+
+  echo "edge iterator: ", my_iter.toSeq
+
   for kind in GraphKind:
-    # var graph = kind.from_edges(my_iter)
-    var graph = kind.from_edges(edge_list)
-    echo graph
-    echo graph.edges.toSeq
+    var graph_from_list = kind.from_edges(edge_list)
+    echo graph_from_list
+    echo graph_from_list.edges.toSeq
+
+    var graph_from_iter = kind.from_edges(my_iter)
+    echo graph_from_iter
+    echo graph_from_iter.edges.toSeq
