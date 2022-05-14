@@ -121,16 +121,10 @@ proc add_edge*[T; W: SomeNumber](graph; u, v: T, weight: W = 1) =
 proc add_nodes_from*[T](graph; graph_data: openArray[T]) =
   for node in graph_data: graph.add_node(node)
 
-proc add_nodes_from*[T](graph; graph_data: seq[T]) =
-  for node in graph_data: graph.add_node(node)
-
 proc add_nodes_from*[T](graph; graph_data: iterator: T) =
   for node in graph_data: graph.add_node(node)
 
 proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: openArray[(T, W)]) =
-  for (u, w) in graph_data: graph.add_node(u, w)
-
-proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: seq[(T, W)]) =
   for (u, w) in graph_data: graph.add_node(u, w)
 
 proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: iterator: (T, W)) =
@@ -139,16 +133,10 @@ proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: iterator: (T, W)) =
 proc add_edges_from*[T](graph; graph_data: openArray[(T, T)]) =
   for (u, v) in graph_data: graph.add_edge(u, v)
 
-proc add_edges_from*[T](graph; graph_data: seq[(T, T)]) =
-  for (u, v) in graph_data: graph.add_edge(u, v)
-
 proc add_edges_from*[T](graph; graph_data: iterator: (T, T)) =
   for (u, v) in graph_data: graph.add_edge(u, v)
 
 proc add_edges_from*[T; W: SomeNumber](graph; graph_data: openArray[(T, T, W)]) =
-  for (u, v, w) in graph_data: graph.add_edge(u, v, w)
-
-proc add_edges_from*[T; W: SomeNumber](graph; graph_data: seq[(T, T, W)]) =
   for (u, v, w) in graph_data: graph.add_edge(u, v, w)
 
 proc add_edges_from*[T; W: SomeNumber](graph; graph_data: iterator: (T, T, W)) =
@@ -165,19 +153,11 @@ proc from_nodes*[T](kind: GraphKind, graph_data: openArray[T]): Graph[T, int] =
   result = initGraph[T, int] kind
   result.add_nodes_from(graph_data)
 
-proc from_nodes*[T](kind: GraphKind, graph_data: seq[T]): Graph[T, int] =
-  result = initGraph[T, int] kind
-  result.add_nodes_from(graph_data)
-
 proc from_nodes*[T](kind: GraphKind, graph_data: iterator: T): Graph[T, int] =
   result = initGraph[T, int] kind
   result.add_nodes_from(graph_data)
 
 proc from_nodes*[T; W: SomeNumber](kind: GraphKind, graph_data: openArray[(T, W)]): Graph[T, W] =
-  result = initGraph[T, W] kind
-  result.add_nodes_from(graph_data)
-
-proc from_nodes*[T; W: SomeNumber](kind: GraphKind, graph_data: seq[(T, W)]): Graph[T, W] =
   result = initGraph[T, W] kind
   result.add_nodes_from(graph_data)
 
@@ -189,19 +169,11 @@ proc from_edges*[T](kind: GraphKind, graph_data: openArray[(T, T)]): Graph[T, in
   result = initGraph[T, int] kind
   result.add_edges_from(graph_data)
 
-proc from_edges*[T](kind: GraphKind, graph_data: seq[(T, T)]): Graph[T, int] =
-  result = initGraph[T, int] kind
-  result.add_edges_from(graph_data)
-
 proc from_edges*[T](kind: GraphKind, graph_data: iterator: (T, T)): Graph[T, int] =
   result = initGraph[T, int] kind
   result.add_edges_from(graph_data)
 
 proc from_edges*[T; W: SomeNumber](kind: GraphKind, graph_data: openArray[(T, T, W)]): Graph[T, W] =
-  result = initGraph[T, W] kind
-  result.add_edges_from(graph_data)
-
-proc from_edges*[T; W: SomeNumber](kind: GraphKind, graph_data: seq[(T, T, W)]): Graph[T, W] =
   result = initGraph[T, W] kind
   result.add_edges_from(graph_data)
 
