@@ -246,6 +246,7 @@ proc to_directed*(graph): Graph =
     of gkMultiGraph, gkMultiDiGraph:
       result.kind = gkMultiDiGraph
       result.multiadj = graph.multiadj
+      result.uid = graph.uid
 
 proc to_undirected*(graph): Graph =
   result = Graph(nodes: graph.nodes)
@@ -262,12 +263,13 @@ proc to_undirected*(graph): Graph =
   of gkMultiGraph, gkMultiDiGraph:
     result.kind = gkMultiGraph
     result.multiadj = graph.multiadj
+    result.uid = graph.uid
 
     if graph.kind == gkMultiDiGraph:
       for node, neighbors in result.multiadj:
         for neighbor, (_, weight) in neighbors:
-          result.multiadj[neighbor][graph.uid] = weight
-          inc graph.uid
+          result.multiadj[neighbor][result.uid] = weight
+          inc result.uid
 
 when isMainModule:
   import std/sequtils
