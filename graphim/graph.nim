@@ -1,4 +1,4 @@
-import std/[sets, strformat, tables]
+import std/[macros, sets, strformat, tables]
 
 type
   GraphKind* = enum
@@ -118,30 +118,6 @@ proc add_edge*[T; W: SomeNumber](graph; u, v: T, weight: W = 1) =
     graph.multiadj[u][v][graph.uid] = weight
     inc graph.uid
 
-proc add_nodes_from*[T](graph; graph_data: openArray[T]) =
-  for node in graph_data: graph.add_node(node)
-
-proc add_nodes_from*[T](graph; graph_data: iterator: T) =
-  for node in graph_data: graph.add_node(node)
-
-proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: openArray[(T, W)]) =
-  for (u, w) in graph_data: graph.add_node(u, w)
-
-proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: iterator: (T, W)) =
-  for (u, w) in graph_data: graph.add_node(u, w)
-
-proc add_edges_from*[T](graph; graph_data: openArray[(T, T)]) =
-  for (u, v) in graph_data: graph.add_edge(u, v)
-
-proc add_edges_from*[T](graph; graph_data: iterator: (T, T)) =
-  for (u, v) in graph_data: graph.add_edge(u, v)
-
-proc add_edges_from*[T; W: SomeNumber](graph; graph_data: openArray[(T, T, W)]) =
-  for (u, v, w) in graph_data: graph.add_edge(u, v, w)
-
-proc add_edges_from*[T; W: SomeNumber](graph; graph_data: iterator: (T, T, W)) =
-  for (u, v, w) in graph_data: graph.add_edge(u, v, w)
-
 proc initGraph*[T; W: SomeNumber](kind: GraphKind): Graph[T, W] =
   case kind:
   of gkGraph, gkDiGraph:
@@ -149,37 +125,57 @@ proc initGraph*[T; W: SomeNumber](kind: GraphKind): Graph[T, W] =
   of gkMultiGraph, gkMultiDiGraph:
     result = Graph[T, W](kind: kind, nodes: Table[T, W](), multiadj: MultiAdj[T, W]())
 
-proc from_nodes*[T](kind: GraphKind, graph_data: openArray[T]): Graph[T, int] =
-  result = initGraph[T, int] kind
-  result.add_nodes_from(graph_data)
+macro and_iterators_too(body: untyped): untyped =
+  var iterator_procs: seq[NimNode] = @[]
 
-proc from_nodes*[T](kind: GraphKind, graph_data: iterator: T): Graph[T, int] =
-  result = initGraph[T, int] kind
-  result.add_nodes_from(graph_data)
+  for node in body:
+    if node.kind == nnkProcDef:
+      var new_proc = node.copyNimTree
+      for identifier in new_proc[3]:
+        if (
+          identifier.kind == nnkIdentDefs and
+          identifier[1].kind == nnkBracketExpr and
+          identifier[1][0] == ident"openArray"
+        ):
+          identifier[1] = nnkIteratorTy.newTree(
+            nnkFormalParams.newTree identifier[1][1],
+            newEmptyNode(),
+          )
+      iterator_procs.add new_proc
 
-proc from_nodes*[T; W: SomeNumber](kind: GraphKind, graph_data: openArray[(T, W)]): Graph[T, W] =
-  result = initGraph[T, W] kind
-  result.add_nodes_from(graph_data)
+  for node in iterator_procs:
+    body.add node
 
-proc from_nodes*[T; W: SomeNumber](kind: GraphKind, graph_data: iterator: (T, W)): Graph[T, W] =
-  result = initGraph[T, W] kind
-  result.add_nodes_from(graph_data)
+  result = body
 
-proc from_edges*[T](kind: GraphKind, graph_data: openArray[(T, T)]): Graph[T, int] =
-  result = initGraph[T, int] kind
-  result.add_edges_from(graph_data)
+and_iterators_too:
+  proc add_nodes_from*[T](graph; graph_data: openArray[T]) =
+    for node in graph_data: graph.add_node(node)
 
-proc from_edges*[T](kind: GraphKind, graph_data: iterator: (T, T)): Graph[T, int] =
-  result = initGraph[T, int] kind
-  result.add_edges_from(graph_data)
+  proc add_nodes_from*[T; W: SomeNumber](graph; graph_data: openArray[(T, W)]) =
+    for (u, w) in graph_data: graph.add_node(u, w)
 
-proc from_edges*[T; W: SomeNumber](kind: GraphKind, graph_data: openArray[(T, T, W)]): Graph[T, W] =
-  result = initGraph[T, W] kind
-  result.add_edges_from(graph_data)
+  proc add_edges_from*[T](graph; graph_data: openArray[(T, T)]) =
+    for (u, v) in graph_data: graph.add_edge(u, v)
 
-proc from_edges*[T; W: SomeNumber](kind: GraphKind, graph_data: iterator: (T, T, W)): Graph[T, W] =
-  result = initGraph[T, W] kind
-  result.add_edges_from(graph_data)
+  proc add_edges_from*[T; W: SomeNumber](graph; graph_data: openArray[(T, T, W)]) =
+    for (u, v, w) in graph_data: graph.add_edge(u, v, w)
+
+  proc from_nodes*[T](kind: GraphKind, graph_data: openArray[T]): Graph[T, int] =
+    result = initGraph[T, int] kind
+    result.add_nodes_from(graph_data)
+
+  proc from_nodes*[T; W: SomeNumber](kind: GraphKind, graph_data: openArray[(T, W)]): Graph[T, W] =
+    result = initGraph[T, W] kind
+    result.add_nodes_from(graph_data)
+
+  proc from_edges*[T](kind: GraphKind, graph_data: openArray[(T, T)]): Graph[T, int] =
+    result = initGraph[T, int] kind
+    result.add_edges_from(graph_data)
+
+  proc from_edges*[T; W: SomeNumber](kind: GraphKind, graph_data: openArray[(T, T, W)]): Graph[T, W] =
+    result = initGraph[T, W] kind
+    result.add_edges_from(graph_data)
 
 proc order*(graph): int = graph.nodes.len
 
@@ -248,7 +244,11 @@ when isMainModule:
   # let edge_list = [(0, 0), (0, 1), (1, 0), (0, 2), (0, 3), (2, 3), (2, 3)]
   let edge_list = @[('a', 'a'), ('a', 'b'), ('b', 'a'), ('a', 'c'), ('a', 'd'), ('c', 'd'), ('c', 'd')]
   echo "edge list: ", edge_list
+  # iterator my_iter(): (int, int) {.closure.}=
+  #   yield (0, 0)
+  #   yield (1, 1)
   for kind in GraphKind:
+    # var graph = kind.from_edges(my_iter)
     var graph = kind.from_edges(edge_list)
     echo graph
     echo graph.edges.toSeq
