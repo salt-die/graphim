@@ -17,8 +17,7 @@ macro and_iterators_too*(body: untyped): untyped =
   ## Procs defined for openArray types will also be defined for iterators.
   for i in 0..<body.len:
     if body[i].kind == nnkProcDef:
-      var newProc = body[i].copyNimTree
-      newProc.replaceArrayWithIterator
-      body.add newProc
+      body.add body[i].copyNimTree
+      body[^1].replaceArrayWithIterator
 
   result = body
