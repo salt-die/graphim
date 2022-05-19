@@ -51,15 +51,11 @@ proc addNode*[T](G: Graph, node: T) =
     G.pred[][node] = HashSet[T]()
 
 proc addEdge*[T](G: Graph[T]; u, v: T) =
+  G.addNode u
+  G.addNode v
+
   G.succ[][u].incl v
-
-  if u notin G.pred[]:
-    G.pred[][u] = HashSet[T]()
-
   G.pred[][v].incl u
-
-  if v notin G.succ[]:
-    G.succ[][v] = HashSet[T]()
 
 iterator successors*[T](G: Graph[T], node: T): T =
   for succ in G.succ[][node]:
