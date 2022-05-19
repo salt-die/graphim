@@ -4,11 +4,9 @@ type
   AdjList[T] = ref Table[T, HashSet[T]]
 
   Graph*[T] = ref object
-    ## Generic graph object keeps track of two adjacency lists:
+    ## Graph keeps track of two adjacency lists:
     ## successors and predecessors. For undirected graphs,
-    ## successors also happen to be predecessors.
-    ##
-    ## T can be any hashable type.
+    ## successors and predecessors reference the same underlying table.
     succ: AdjList[T]
     pred: AdjList[T]
 
@@ -27,7 +25,6 @@ proc isDirected*[T](G: Graph[T]): bool =
 
 proc copy[T](adjList: AdjList[T]): AdjList[T] =
   new result
-
   for k, v in adjList:
     result[][k] = v
 
@@ -64,22 +61,32 @@ proc addEdge*[T](G: Graph[T]; u, v: T) =
   if v notin G.succ[]:
     G.succ[][v] = HashSet[T]()
 
-proc `[]`*[T](G: Graph[T], node: T): HashSet[T] =
-  G.succ[][node]
+iterator successors*[T](G: Graph[T], node: T): T =
+  for succ in G.succ[][node]:
+    yield succ
+
+iterator predecessors*[T](G: Graph[T], node: T): T =
+  for pred in G.pred[][node]:
+    yield pred
 
 proc order*(G: Graph): int = G.succ[].len
   ## Total nodes in graph.
 
 proc outDegree*[T](G: Graph, node: T): int =
-  G[node].len + (
-    if not G.isDirected and node in G[node]:
+  G.succ[][node].len + (
+    if not G.isDirected and node in G.succ[][node]:
       1
     else:
       0
   )
 
 proc inDegree*[T](G: Graph, node: T): int =
-  G.pred[][node].len
+  G.pred[][node].len + (
+    if not G.isDirected and node in G.pred[][node]:
+      1
+    else:
+      0
+  )
 
 iterator nodes*[T](G: Graph[T]): T =
   for node in G.succ[].keys:
@@ -93,10 +100,13 @@ proc size*(G: Graph): int =
   if not G.isDirected:
     result = result div 2
 
-iterator outEdges*[T](G: Graph[T]): (T, T) =
-  for node, neighbors in G.succ[]:
-    for neighbor in neighbors:
-      yield (node, neighbor)
+iterator outEdges*[T](G: Graph[T], node: T): (T, T) =
+  for succ in G.successors(node):
+    yield (node, succ)
+
+iterator inEdges*[T](G: Graph[T], node: T): (T, T) =
+  for pred in G.predecessors(node):
+    yield (pred, node)
 
 proc `$`*(G: Graph): string =
   fmt"Graph on {G.order} nodes with {G.size} edges."
@@ -113,6 +123,10 @@ Graph(
     {G.pred[]},
 )"""
 
+  proc display(G: Graph) =
+    echo repr(G)
+    echo G
+
   var G = newDiGraph[int]()
   for i in 0..<10:
     G.addNode i
@@ -123,10 +137,10 @@ Graph(
       v = rand(9)
     G.addEdge(u, v)
 
-  echo repr(G)
-  echo G
+  display G
 
-  G.setUndirected()
+  reverse G
+  display G
 
-  echo repr(G)
-  echo G
+  setUndirected G
+  display G
