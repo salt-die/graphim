@@ -43,8 +43,7 @@ proc setDirected*[T](G: Graph[T]) =
   ## (v, u) will be in the directed graph.
   ##
   ## Does nothing for directed graphs.
-  if not G.isDirected:
-    G.pred = copy G.pred
+  if not G.isDirected: G.pred = copy G.pred
 
 proc setUndirected*[T](G: Graph[T]) =
   ## For directed graphs, this adds all predecessors
@@ -82,14 +81,16 @@ proc removeNode*[T](G: Graph, node: T) =
   G.succ[].del node
   G.pred[].del node
 
-proc addEdge*[T](G: Graph[T], u, v: T) =
+proc addEdge*[T](G: Graph[T], edge: (T, T)) =
+  let (u, v) = edge
   G.addNode u
   G.addNode v
 
   G.succ[][u].incl v
   G.pred[][v].incl u
 
-proc removeEdge*[T](G: Graph[T], u, v: T) =
+proc removeEdge*[T](G: Graph[T], edge: (T, T)) =
+  let (u, v) = edge
   if u in G.succ[]:
     G.succ[][u].excl v
     G.pred[][v].excl u
@@ -117,8 +118,9 @@ proc contains*[T](G: Graph[T], node: T): bool =
   ## True if G contains node.
   node in G.succ[]
 
-proc contains*[T](G: Graph[T], u, v: T): bool =
+proc contains*[T](G: Graph[T], edge: (T, T)): bool =
   ## True if G contains edge (u, v).
+  let (u, v) = edge
   u in G.succ[] and v in G.succ[][u]
 
 iterator successors*[T](G: Graph[T], node: T): T =
@@ -134,10 +136,8 @@ proc order*(G: Graph): int = G.succ[].len
 
 proc outDegree*[T](G: Graph, node: T): int =
   G.succ[][node].len + (
-    if not G.isDirected and node in G.succ[][node]:
-      1
-    else:
-      0
+    if not G.isDirected and node in G.succ[][node]: 1
+    else: 0
   )
 
 proc outDegreeHistogram*[T](G: Graph[T]): CountTable[int] =
@@ -146,10 +146,8 @@ proc outDegreeHistogram*[T](G: Graph[T]): CountTable[int] =
 
 proc inDegree*[T](G: Graph, node: T): int =
   G.pred[][node].len + (
-    if not G.isDirected and node in G.pred[][node]:
-      1
-    else:
-      0
+    if not G.isDirected and node in G.pred[][node]: 1
+    else: 0
   )
 
 proc inDegreeHistogram*[T](G: Graph[T]): CountTable[int] =
@@ -202,6 +200,24 @@ iterator inEdges*[T](G: Graph[T]): (T, T) =
           seen.incl (u, v)
           yield (u, v)
 
+proc subgraph*[T](G: Graph[T], nodes: openArray[T]): Graph[T] =
+  let keep = nodes.toHashSet
+
+  result = copy G
+
+  for node in G.nodes:
+    if node notin keep:
+      result.removeNode node
+
+proc subgraph*[T](G: Graph[T], edges: openArray[(T, T)]): Graph[T] =
+  if G.isDirected:
+    result = newDiGraph[T]()
+  else:
+    result = newgraph[T]()
+
+  for edge in edges:
+    if edge in G: result.addEdge edge
+
 proc `$`*(G: Graph): string =
   fmt"Graph on {G.order} nodes with {G.size} edges."
 
@@ -224,15 +240,7 @@ Graph(
     echo inDegreeHistogram G
 
   var G = newDiGraph[int]()
-  for i in 0..<10:
-    G.addNode i
-
   for _ in 0..<20:
-    let
-      u = rand 9
-      v = rand 9
-    G.addEdge(u, v)
+    G.addEdge (rand 9, rand 9)
 
-  display G
-  setUndirected G
   display G
