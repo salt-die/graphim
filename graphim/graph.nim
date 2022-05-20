@@ -200,23 +200,19 @@ iterator inEdges*[T](G: Graph[T]): (T, T) =
           seen.incl (u, v)
           yield (u, v)
 
-proc subgraph*[T](G: Graph[T], nodes: openArray[T]): Graph[T] =
+proc inducedSubgraph*[T](G: Graph[T], nodes: openArray[T]): Graph[T] =
+  ## Return a graph with nodes from `nodes` and edges from G that have
+  ## both ends in `nodes`.
   let keep = nodes.toHashSet
 
   result = copy G
 
+  for node in nodes:
+    result.addNode node
+
   for node in G.nodes:
     if node notin keep:
       result.removeNode node
-
-proc subgraph*[T](G: Graph[T], edges: openArray[(T, T)]): Graph[T] =
-  if G.isDirected:
-    result = newDiGraph[T]()
-  else:
-    result = newgraph[T]()
-
-  for edge in edges:
-    if edge in G: result.addEdge edge
 
 proc `$`*(G: Graph): string =
   fmt"Graph on {G.order} nodes with {G.size} edges."
@@ -244,3 +240,4 @@ Graph(
     G.addEdge (rand 9, rand 9)
 
   display G
+  display G.inducedSubgraph([0, 1, 2, 3, 4])
