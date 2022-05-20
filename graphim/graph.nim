@@ -135,6 +135,8 @@ proc order*(G: Graph): int = G.succ[].len
   ## Total nodes in graph.
 
 proc outDegree*[T](G: Graph, node: T): int =
+  ## The out-degree of a node. For undirected graphs,
+  ## self-loops are counted twice towards the degree.
   G.succ[][node].len + (
     if not G.isDirected and node in G.succ[][node]: 1
     else: 0
@@ -145,6 +147,8 @@ proc outDegreeHistogram*[T](G: Graph[T]): CountTable[int] =
     result.inc G.outDegree(node)
 
 proc inDegree*[T](G: Graph, node: T): int =
+  ## The in-degree of a node. For undirected graphs,
+  ## self-loops are counted twice towards the degree.
   G.pred[][node].len + (
     if not G.isDirected and node in G.pred[][node]: 1
     else: 0
@@ -167,14 +171,18 @@ proc size*(G: Graph): int =
     result = result div 2
 
 iterator outEdges*[T](G: Graph[T], node: T): (T, T) =
+  ## Yield each edge in G starting with `node`.
   for succ in G.successors(node):
     yield (node, succ)
 
 iterator inEdges*[T](G: Graph[T], node: T): (T, T) =
+  ## Yield each edge in G ending with `node`.
   for pred in G.predecessors(node):
     yield (pred, node)
 
-iterator outEdges*[T](G: Graph[T]): (T, T) =
+iterator edges*[T](G: Graph[T]): (T, T) =
+  ## Yield each edge in G. For undirected graphs,
+  ## only one of (u, v) or (v, u) will be yielded.
   if G.isDirected:
     for node in G.nodes:
       for edge in G.outEdges(node):
@@ -183,19 +191,6 @@ iterator outEdges*[T](G: Graph[T]): (T, T) =
     var seen = HashSet[(T, T)]()
     for node in G.nodes:
       for u, v in G.outEdges(node):
-        if (v, u) notin seen:
-          seen.incl (u, v)
-          yield (u, v)
-
-iterator inEdges*[T](G: Graph[T]): (T, T) =
-  if G.isDirected:
-    for node in G.nodes:
-      for edge in G.inEdges(node):
-        yield edge
-  else:
-    var seen = HashSet[(T, T)]()
-    for node in G.nodes:
-      for u, v in G.inEdges(node):
         if (v, u) notin seen:
           seen.incl (u, v)
           yield (u, v)
@@ -214,11 +209,43 @@ proc inducedSubgraph*[T](G: Graph[T], nodes: openArray[T]): Graph[T] =
     if node notin keep:
       result.removeNode node
 
+proc addNodesFrom*[T](G: Graph[T], nodes: openArray[T]) =
+  for node in nodes:
+    G.addNode node
+
+proc removeNodesFrom*[T](G: Graph[T], nodes: openArray[T]) =
+  for node in nodes:
+    G.removeNode node
+
+proc addEdgesFrom*[T](G: Graph[T], edges: openArray[(T, T)]) =
+  for edge in edges:
+    G.addEdge edge
+
+proc removeEdgesFrom*[T](G: Graph[T], edges: openArray[(T, T)]) =
+  for edge in edges:
+    G.removeEdge edge
+
+proc newGraphFromNodes*[T](nodes: openArray[T]): Graph[T] =
+  result = newGraph[T]()
+  result.add_nodes_from(nodes)
+
+proc newDiGraphFromNodes*[T](nodes: openArray[T]): Graph[T] =
+  result = newDiGraph[T]()
+  result.add_nodes_from(nodes)
+
+proc newGraphFromEdges*[T](edges: openArray[(T, T)]): Graph[T] =
+  result = newGraph[T]()
+  result.addEdgesFrom(edges)
+
+proc newDiGraphFromEdges*[T](edges: openArray[(T, T)]): Graph[T] =
+  result = newDiGraph[T]()
+  result.addEdgesFrom(edges)
+
 proc `$`*(G: Graph): string =
   fmt"Graph on {G.order} nodes with {G.size} edges."
 
 when isMainModule:
-  import std/random
+  import std/[random, sugar]
 
   proc repr(G: Graph): string =
     fmt"""
@@ -232,12 +259,15 @@ Graph(
   proc display(G: Graph) =
     echo repr G
     echo G
-    echo outDegreeHistogram G
-    echo inDegreeHistogram G
+    echo "out degree histogram: ", outDegreeHistogram G
+    echo "in degree histogram: ", inDegreeHistogram G
 
-  var G = newDiGraph[int]()
-  for _ in 0..<20:
-    G.addEdge (rand 9, rand 9)
+  var G = newDiGraphFromEdges(
+    collect(
+      for _ in 0..<20:
+        (rand 9, rand 9)
+    )
+  )
 
   display G
   display G.inducedSubgraph([0, 1, 2, 3, 4])
