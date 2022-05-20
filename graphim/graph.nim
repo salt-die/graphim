@@ -64,7 +64,7 @@ proc outDegree*[T](G: Graph, node: T): int =
   ## The out-degree of a node. For undirected graphs,
   ## self-loops are counted twice towards the degree.
   G.succ[node].len + (
-    if not G.isDirected and node in G.succ[][node]: 1
+    if not G.isDirected and node in G.succ[node]: 1
     else: 0
   )
 
@@ -72,7 +72,7 @@ proc inDegree*[T](G: Graph, node: T): int =
   ## The in-degree of a node. For undirected graphs,
   ## self-loops are counted twice towards the degree.
   G.pred[node].len + (
-    if not G.isDirected and node in G.pred[][node]: 1
+    if not G.isDirected and node in G.pred[node]: 1
     else: 0
   )
 
@@ -109,10 +109,10 @@ proc newDiGraph*[T]: Graph[T] =
   result.pred = new AdjList[T]
 
 proc addNode*[T](G: Graph, node: T) =
-  if node notin G.succ[]:
+  if node notin G.succ:
     G.succ[node] = HashSet[T]()
 
-  if node notin G.pred[]:
+  if node notin G.pred:
     G.pred[node] = HashSet[T]()
 
 proc removeNode*[T](G: Graph, node: T) =
@@ -135,8 +135,10 @@ proc addEdge*[T](G: Graph[T], edge: (T, T)) =
 
 proc removeEdge*[T](G: Graph[T], edge: (T, T)) =
   let (u, v) = edge
-  if u in G.succ[]:
+  if u in G.succ:
     G.succ[u].excl v
+
+  if v in G.pred:
     G.pred[v].excl u
 
 proc addNodesFrom*[T](G: Graph[T], nodes: openArray[T]) =
@@ -251,9 +253,9 @@ when isMainModule:
     fmt"""
 Graph(
   succ:
-    {G.succ[]},
+    {G.succ},
   pred:
-    {G.pred[]},
+    {G.pred},
 )"""
 
   proc display(G: Graph) =
