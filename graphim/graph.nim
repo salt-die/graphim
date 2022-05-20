@@ -17,10 +17,10 @@ iterator nodes*[T](G: Graph[T]): T =
   for node in G.succ.keys: yield node
 
 iterator successors*[T](G: Graph[T], node: T): T =
-  for succ in G.succ[node]: yield succ
+  for succ in G.succ[node].items: yield succ
 
 iterator predecessors*[T](G: Graph[T], node: T): T =
-  for pred in G.pred[node]: yield pred
+  for pred in G.pred[node].items: yield pred
 
 iterator outEdges*[T](G: Graph[T], node: T): (T, T) =
   ## Yield each edge in G starting with `node`.
@@ -116,10 +116,10 @@ proc addNode*[T](G: Graph, node: T) =
     G.pred[node] = HashSet[T]()
 
 proc removeNode*[T](G: Graph, node: T) =
-  for succ in G.succ[node]:
+  for succ in G.succ[node].items:
     G.pred[succ].excl node
 
-  for pred in G.pred[node]:
+  for pred in G.pred[node].items:
     G.succ[pred].excl node
 
   G.succ.del node
@@ -197,12 +197,10 @@ proc copy*[T](G: Graph[T]): Graph[T] =
 
 proc update*[T](G, H: Graph[T]) =
   ## Add all nodes and edges from H to G.
-  for node in H.succ.values:
-    G.addNode node
-
   for node, successors in H.succ:
-    for succ in successors:
-      G.addEdge node, succ
+    G.addNode node
+    for succ in successors.items:
+      G.addEdge (node, succ)
 
 proc inducedSubgraph*[T](G: Graph[T], nodes: openArray[T]): Graph[T] =
   ## Return a graph with nodes from `nodes` and edges from G that have
@@ -235,9 +233,9 @@ proc setUndirected*[T](G: Graph[T]) =
   ##
   ## Does nothing for undirected graphs.
   if G.isDirected:
-    for node, neighbors in G.pred:
-      for neighbor in neighbors:
-        G.succ[node].incl neighbor
+    for node, predecessors in G.pred:
+      for pred in predecessors.items:
+        G.succ[node].incl pred
 
     G.pred = G.succ
 
@@ -245,31 +243,3 @@ proc reverse*[T](G: Graph[T]) =
   ## Reverse edges in a directed graph in O(1).
   ## Does nothing for undirected graphs.
   swap(G.succ, G.pred)
-
-when isMainModule:
-  import std/[random, sugar]
-
-  proc repr(G: Graph): string =
-    fmt"""
-Graph(
-  succ:
-    {G.succ},
-  pred:
-    {G.pred},
-)"""
-
-  proc display(G: Graph) =
-    echo repr G
-    echo G
-    echo "out degree histogram: ", outDegreeHistogram G
-    echo "in degree histogram: ", inDegreeHistogram G
-
-  var G = newDiGraphFromEdges(
-    collect(
-      for _ in 0..<20:
-        (rand 9, rand 9)
-    )
-  )
-
-  display G
-  display G.inducedSubgraph([0, 1, 2, 3, 4])
