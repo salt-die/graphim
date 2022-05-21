@@ -158,11 +158,11 @@ proc addEdgesFrom*[T, W](G: WeightedGraph[T, W], edges: openArray[(T, T, W)]) =
 proc removeEdgesFrom*[T, W](G: WeightedGraph[T, W], edges: openArray[(T, T, W)]) =
   for edge in edges: G.removeEdge edge
 
-proc newWeightedGraphFromNodes*[T, W](nodes: openArray[T], w: typedesc(W)): WeightedGraph[T, W] =
+proc newWeightedGraphFromNodes*[T](nodes: openArray[T], W: typedesc): WeightedGraph[T, W] =
   result = newWeightedGraph[T, W]()
   result.addNodesFrom nodes
 
-proc newWeightedDiGraphFromNodes*[T, W](nodes: openArray[T], w: typedesc(W)): WeightedGraph[T, W] =
+proc newWeightedDiGraphFromNodes*[T](nodes: openArray[T], W: typedesc): WeightedGraph[T, W] =
   result = newWeightedDiGraph[T, W]()
   result.addNodesFrom nodes
 
@@ -213,8 +213,8 @@ proc inducedSubgraph*[T, W](G: WeightedGraph[T, W], nodes: openArray[T]): Weight
   let keep = nodes.toHashSet
 
   result = (
-    if G.isDirected: newWeightedDiGraphFromNodes nodes
-    else: newWeightedGraphFromNodes nodes
+    if G.isDirected: newWeightedDiGraphFromNodes(nodes, W)
+    else: newWeightedGraphFromNodes(nodes, W)
   )
 
   for node in nodes:
