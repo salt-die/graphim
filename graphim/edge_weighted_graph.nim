@@ -1,37 +1,37 @@
 import std/[sets, strformat, tables]
 
 type
-  WeightedAdjList[T, W] = TableRef[T, Table[T, W]]
+  EdgeWeightedAdjList[T, W] = TableRef[T, Table[T, W]]
 
-  WeightedGraph*[T, W] = ref object
-    ## WeightedGraph keeps track of two adjacency lists,
+  EdgeWeightedGraph*[T, W] = ref object
+    ## EdgeWeightedGraph keeps track of two adjacency lists,
     ## successors and predecessors. For undirected graphs,
     ## successors and predecessors reference the same underlying table.
-    succ: WeightedAdjList[T, W]
-    pred: WeightedAdjList[T, W]
+    succ: EdgeWeightedAdjList[T, W]
+    pred: EdgeWeightedAdjList[T, W]
 
-using G: WeightedGraph
+using G: EdgeWeightedGraph
 
 # Iterators:
 
-iterator nodes*[T, W](G: WeightedGraph[T, W]): T =
+iterator nodes*[T, W](G: EdgeWeightedGraph[T, W]): T =
   for node in G.succ.keys: yield node
 
-iterator successors*[T, W](G: WeightedGraph[T, W], node: T): T =
+iterator successors*[T, W](G: EdgeWeightedGraph[T, W], node: T): T =
   for succ in G.succ[node].keys:  yield succ
 
-iterator predecessors*[T, W](G: WeightedGraph[T, W], node: T): T =
+iterator predecessors*[T, W](G: EdgeWeightedGraph[T, W], node: T): T =
   for pred in G.pred[node].keys: yield pred
 
-iterator outEdges*[T, W](G: WeightedGraph[T, W], node: T): (T, T, W) =
+iterator outEdges*[T, W](G: EdgeWeightedGraph[T, W], node: T): (T, T, W) =
   ## Yield each edge in G starting with `node`.
   for succ, weight in G.succ[node].pairs: yield (node, succ, weight)
 
-iterator inEdges*[T, W](G: WeightedGraph[T, W], node: T): (T, T, W) =
+iterator inEdges*[T, W](G: EdgeWeightedGraph[T, W], node: T): (T, T, W) =
   ## Yield each edge in G ending with `node`.
   for pred, weight in G.pred[node].pairs: yield (pred, node, weight)
 
-iterator edges*[T, W](G: WeightedGraph[T, W]): (T, T, W) =
+iterator edges*[T, W](G: EdgeWeightedGraph[T, W]): (T, T, W) =
   ## Yield each edge in G. For undirected graphs,
   ## only one of (u, v, w) or (v, u, w) will be yielded.
   if G.isDirected:
@@ -49,19 +49,19 @@ iterator edges*[T, W](G: WeightedGraph[T, W]): (T, T, W) =
 
 # Queries:
 
-proc isDirected*[T, W](G: WeightedGraph[T, W]): bool =
+proc isDirected*[T, W](G: EdgeWeightedGraph[T, W]): bool =
   G.succ != G.pred  # ref type, comparing identity.
 
-proc contains*[T, W](G: WeightedGraph[T, W], node: T): bool =
+proc contains*[T, W](G: EdgeWeightedGraph[T, W], node: T): bool =
   ## True if G contains node.
   node in G.succ
 
-proc contains*[T, W](G: WeightedGraph[T, W], edge: (T, T)): bool =
+proc contains*[T, W](G: EdgeWeightedGraph[T, W], edge: (T, T)): bool =
   ## True if G contains edge (u, v).
   let (u, v) = edge
   u in G.succ and v in G.succ[u]
 
-proc outDegree*[T, W](G: WeightedGraph[T, W], node: T): int =
+proc outDegree*[T, W](G: EdgeWeightedGraph[T, W], node: T): int =
   ## The out-degree of a node. For undirected graphs,
   ## self-loops are counted twice towards the degree.
   G.succ[node].len + (
@@ -69,7 +69,7 @@ proc outDegree*[T, W](G: WeightedGraph[T, W], node: T): int =
     else: 0
   )
 
-proc inDegree*[T, W](G: WeightedGraph[T, W], node: T): int =
+proc inDegree*[T, W](G: EdgeWeightedGraph[T, W], node: T): int =
   ## The in-degree of a node. For undirected graphs,
   ## self-loops are counted twice towards the degree.
   G.pred[node].len + (
@@ -94,33 +94,33 @@ proc size*(G): int =
 proc `$`*(G): string =
   fmt"Graph on {G.order} nodes with {G.size} edges."
 
-proc weight*[T, W](G: WeightedGraph[T, W], edge: (T, T)): W =
+proc weight*[T, W](G: EdgeWeightedGraph[T, W], edge: (T, T)): W =
   let (u, v) = edge
   G.succ[u][v]
 
 
 # Construction:
 
-proc newWeightedGraph*[T, W]: WeightedGraph[T, W] =
+proc newEdgeWeightedGraph*[T, W]: EdgeWeightedGraph[T, W] =
   ## New undirected weighted graph.
   new result
-  result.succ = new WeightedAdjList[T, W]
+  result.succ = new EdgeWeightedAdjList[T, W]
   result.pred = result.succ
 
-proc newWeightedDiGraph*[T, W]: WeightedGraph[T, W] =
+proc newEdgeWeightedDiGraph*[T, W]: EdgeWeightedGraph[T, W] =
   ## New directed weighted graph.
   new result
-  result.succ = new WeightedAdjList[T, W]
-  result.pred = new WeightedAdjList[T, W]
+  result.succ = new EdgeWeightedAdjList[T, W]
+  result.pred = new EdgeWeightedAdjList[T, W]
 
-proc addNode*[T, W](G: WeightedGraph[T, W], node: T) =
+proc addNode*[T, W](G: EdgeWeightedGraph[T, W], node: T) =
   if node notin G.succ:
     G.succ[node] = Table[T, W]()
 
   if node notin G.pred:
     G.pred[node] = Table[T, W]()
 
-proc removeNode*[T, W](G: WeightedGraph[T, W], node: T) =
+proc removeNode*[T, W](G: EdgeWeightedGraph[T, W], node: T) =
   for succ in G.succ[node].keys:
     G.pred[succ].del node
 
@@ -130,7 +130,7 @@ proc removeNode*[T, W](G: WeightedGraph[T, W], node: T) =
   G.succ.del node
   G.pred.del node
 
-proc addEdge*[T, W](G: WeightedGraph[T, W], edge: (T, T, W)) =
+proc addEdge*[T, W](G: EdgeWeightedGraph[T, W], edge: (T, T, W)) =
   let (u, v, w) = edge
   G.addNode u
   G.addNode v
@@ -138,7 +138,7 @@ proc addEdge*[T, W](G: WeightedGraph[T, W], edge: (T, T, W)) =
   G.succ[u][v] = w
   G.pred[v][u] = w
 
-proc removeEdge*[T, W](G: WeightedGraph[T, W], edge: (T, T)) =
+proc removeEdge*[T, W](G: EdgeWeightedGraph[T, W], edge: (T, T)) =
   let (u, v) = edge
   if u in G.succ:
     G.succ[u].del v
@@ -146,32 +146,32 @@ proc removeEdge*[T, W](G: WeightedGraph[T, W], edge: (T, T)) =
   if v in G.pred:
     G.pred[v].del u
 
-proc addNodesFrom*[T, W](G: WeightedGraph[T, W], nodes: openArray[T]) =
+proc addNodesFrom*[T, W](G: EdgeWeightedGraph[T, W], nodes: openArray[T]) =
   for node in nodes: G.addNode node
 
-proc removeNodesFrom*[T, W](G: WeightedGraph[T, W], nodes: openArray[T]) =
+proc removeNodesFrom*[T, W](G: EdgeWeightedGraph[T, W], nodes: openArray[T]) =
   for node in nodes: G.removeNode node
 
-proc addEdgesFrom*[T, W](G: WeightedGraph[T, W], edges: openArray[(T, T, W)]) =
+proc addEdgesFrom*[T, W](G: EdgeWeightedGraph[T, W], edges: openArray[(T, T, W)]) =
   for edge in edges: G.addEdge edge
 
-proc removeEdgesFrom*[T, W](G: WeightedGraph[T, W], edges: openArray[(T, T, W)]) =
+proc removeEdgesFrom*[T, W](G: EdgeWeightedGraph[T, W], edges: openArray[(T, T, W)]) =
   for edge in edges: G.removeEdge edge
 
-proc newWeightedGraphFromNodes*[T](nodes: openArray[T], W: typedesc): WeightedGraph[T, W] =
-  result = newWeightedGraph[T, W]()
+proc newEdgeWeightedGraphFromNodes*[T](nodes: openArray[T], W: typedesc): EdgeWeightedGraph[T, W] =
+  result = newEdgeWeightedGraph[T, W]()
   result.addNodesFrom nodes
 
-proc newWeightedDiGraphFromNodes*[T](nodes: openArray[T], W: typedesc): WeightedGraph[T, W] =
-  result = newWeightedDiGraph[T, W]()
+proc newEdgeWeightedDiGraphFromNodes*[T](nodes: openArray[T], W: typedesc): EdgeWeightedGraph[T, W] =
+  result = newEdgeWeightedDiGraph[T, W]()
   result.addNodesFrom nodes
 
-proc newWeightedGraphFromEdges*[T, W](edges: openArray[(T, T, W)]): WeightedGraph[T, W] =
-  result = newWeightedGraph[T, W]()
+proc newEdgeWeightedGraphFromEdges*[T, W](edges: openArray[(T, T, W)]): EdgeWeightedGraph[T, W] =
+  result = newEdgeWeightedGraph[T, W]()
   result.addEdgesFrom edges
 
-proc newWeightedDiGraphFromEdges*[T, W](edges: openArray[(T, T, W)]): WeightedGraph[T, W] =
-  result = newWeightedDiGraph[T, W]()
+proc newEdgeWeightedDiGraphFromEdges*[T, W](edges: openArray[(T, T, W)]): EdgeWeightedGraph[T, W] =
+  result = newEdgeWeightedDiGraph[T, W]()
   result.addEdgesFrom edges
 
 proc clear*(G) =
@@ -187,11 +187,11 @@ proc clearEdges*(G) =
   for predecessors in G.pred.mvalues:
     clear predecessors
 
-proc copy[T, W](adjList: WeightedAdjList[T, W]): WeightedAdjList[T, W] =
+proc copy[T, W](adjList: EdgeWeightedAdjList[T, W]): EdgeWeightedAdjList[T, W] =
   new result
   result[] = adjList[]
 
-proc copy*[T, W](G: WeightedGraph[T, W]): WeightedGraph[T, W] =
+proc copy*[T, W](G: EdgeWeightedGraph[T, W]): EdgeWeightedGraph[T, W] =
   new result
   result.succ = copy G.succ
 
@@ -200,21 +200,21 @@ proc copy*[T, W](G: WeightedGraph[T, W]): WeightedGraph[T, W] =
   else:
     result.pred = copy G.pred
 
-proc update*[T, W](G, H: WeightedGraph[T, W]) =
+proc update*[T, W](G, H: EdgeWeightedGraph[T, W]) =
   ## Add all nodes and edges from H to G.
   for node, successors in H.succ:
     G.addNode node
     for succ, weight in successors:
       G.addEdge (node, succ, weight)
 
-proc inducedSubgraph*[T, W](G: WeightedGraph[T, W], nodes: openArray[T]): WeightedGraph[T, W] =
+proc inducedSubgraph*[T, W](G: EdgeWeightedGraph[T, W], nodes: openArray[T]): EdgeWeightedGraph[T, W] =
   ## Return a graph with nodes from `nodes` and edges from G that have
   ## both ends in `nodes`.
   let keep = nodes.toHashSet
 
   result = (
-    if G.isDirected: newWeightedDiGraphFromNodes(nodes, W)
-    else: newWeightedGraphFromNodes(nodes, W)
+    if G.isDirected: newEdgeWeightedDiGraphFromNodes(nodes, W)
+    else: newEdgeWeightedGraphFromNodes(nodes, W)
   )
 
   for node in nodes:

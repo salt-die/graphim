@@ -1,7 +1,7 @@
 import std/[random, sequtils, strformat, strutils, sugar, tables]
-import ../graphim/weighted_graph
+import ../graphim/edge_weighted_graph
 
-proc repr(G: WeightedGraph): string =
+proc repr(G: EdgeWeightedGraph): string =
   ## This representation is only suitable for small graphs.
   let
     outEdges = collect(
@@ -27,7 +27,7 @@ Graph:
 proc showHistogram(histogram: CountTable[int]) =
   echo collect(for k, v in histogram: fmt"  {k}: {v}").join("\n")
 
-proc display(G: WeightedGraph) =
+proc display(G: EdgeWeightedGraph) =
   echo G
   echo repr G
   echo "Out Histogram: "
@@ -35,7 +35,7 @@ proc display(G: WeightedGraph) =
   echo "In Histogram: "
   G.inDegreeHistogram.showHistogram
 
-var G = newWeightedDiGraphFromEdges(
+var G = newEdgeWeightedDiGraphFromEdges(
   collect(
     for _ in 0..<20:
       (rand 9, rand 9, rand 100)
