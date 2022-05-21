@@ -3,7 +3,7 @@ import std/[sets, strformat, tables]
 type
   AdjList[T] = TableRef[T, HashSet[T]]
 
-  Graph*[T] = ref object
+  Graph*[T] = ref object of RootObj
     ## Graph keeps track of two adjacency lists,
     ## successors and predecessors. For undirected graphs,
     ## successors and predecessors reference the same underlying table.
