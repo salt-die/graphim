@@ -10,6 +10,8 @@ type
     succ: AdjList[T]
     pred: AdjList[T]
 
+using G: Graph
+
 
 # Iterators:
 
@@ -60,7 +62,7 @@ proc contains*[T](G: Graph[T], edge: (T, T)): bool =
   let (u, v) = edge
   u in G.succ and v in G.succ[u]
 
-proc outDegree*[T](G: Graph, node: T): int =
+proc outDegree*[T](G; node: T): int =
   ## The out-degree of a node. For undirected graphs,
   ## self-loops are counted twice towards the degree.
   G.succ[node].len + (
@@ -68,7 +70,7 @@ proc outDegree*[T](G: Graph, node: T): int =
     else: 0
   )
 
-proc inDegree*[T](G: Graph, node: T): int =
+proc inDegree*[T](G; node: T): int =
   ## The in-degree of a node. For undirected graphs,
   ## self-loops are counted twice towards the degree.
   G.pred[node].len + (
@@ -76,21 +78,21 @@ proc inDegree*[T](G: Graph, node: T): int =
     else: 0
   )
 
-proc outDegreeHistogram*[T](G: Graph[T]): CountTable[int] =
-  for node in G.succ.keys: result.inc G.outDegree(node)
+proc outDegreeHistogram*(G): CountTable[int] =
+  for node in G.nodes: result.inc G.outDegree(node)
 
-proc inDegreeHistogram*[T](G: Graph[T]): CountTable[int] =
-  for node in G.pred.keys: result.inc G.inDegree(node)
+proc inDegreeHistogram*(G): CountTable[int] =
+  for node in G.nodes: result.inc G.inDegree(node)
 
-proc order*(G: Graph): int = G.succ.len
+proc order*(G): int = G.succ.len
   ## Total nodes in graph.
 
-proc size*(G: Graph): int =
+proc size*(G): int =
   ## Total edges in graph.
   for node in G.nodes: result += G.outDegree node
   if not G.isDirected: result = result div 2
 
-proc `$`*(G: Graph): string =
+proc `$`*(G): string =
   fmt"Graph on {G.order} nodes with {G.size} edges."
 
 
@@ -108,14 +110,14 @@ proc newDiGraph*[T]: Graph[T] =
   result.succ = new AdjList[T]
   result.pred = new AdjList[T]
 
-proc addNode*[T](G: Graph, node: T) =
+proc addNode*[T](G; node: T) =
   if node notin G.succ:
     G.succ[node] = HashSet[T]()
 
   if node notin G.pred:
     G.pred[node] = HashSet[T]()
 
-proc removeNode*[T](G: Graph, node: T) =
+proc removeNode*[T](G; node: T) =
   for succ in G.succ[node].items:
     G.pred[succ].excl node
 
@@ -155,11 +157,11 @@ proc removeEdgesFrom*[T](G: Graph[T], edges: openArray[(T, T)]) =
 
 proc newGraphFromNodes*[T](nodes: openArray[T]): Graph[T] =
   result = newGraph[T]()
-  result.add_nodes_from(nodes)
+  result.addNodesFrom(nodes)
 
 proc newDiGraphFromNodes*[T](nodes: openArray[T]): Graph[T] =
   result = newDiGraph[T]()
-  result.add_nodes_from(nodes)
+  result.addNodesFrom(nodes)
 
 proc newGraphFromEdges*[T](edges: openArray[(T, T)]): Graph[T] =
   result = newGraph[T]()
@@ -169,13 +171,13 @@ proc newDiGraphFromEdges*[T](edges: openArray[(T, T)]): Graph[T] =
   result = newDiGraph[T]()
   result.addEdgesFrom(edges)
 
-proc clear*[T](G: Graph[T]) =
-  ## Remove all nodes and edges from a graph.
+proc clear*(G) =
+  ## Remove all nodes and edges from the graph.
   clear G.succ
   clear G.pred
 
-proc clearEdges*[T](G: Graph[T]) =
-  ## Remove all edges from a graph.
+proc clearEdges*(G) =
+  ## Remove all edges from the graph.
   for successors in G.succ.mvalues:
     clear successors
 
@@ -207,16 +209,21 @@ proc inducedSubgraph*[T](G: Graph[T], nodes: openArray[T]): Graph[T] =
   ## both ends in `nodes`.
   let keep = nodes.toHashSet
 
-  result = copy G
-  for node in nodes: result.addNode node
+  result = (
+    if G.isDirected: newDiGraphFromNodes nodes
+    else: newGraphFromNodes nodes
+  )
 
-  for node in G.nodes:
-    if node notin keep: result.removeNode node
+  for node in nodes:
+    if node in G:
+      for edge in G.outEdges(node):
+        if edge[1] in keep:
+          result.addEdge edge
 
 
 # Mutating:
 
-proc setDirected*[T](G: Graph[T]) =
+proc setDirected*(G) =
   ## For undirected graphs, this sets predecessors
   ## to be a separate adjacency list. If the edge (u, v)
   ## was in the undirected graph, the edges (u, v) and
@@ -225,7 +232,7 @@ proc setDirected*[T](G: Graph[T]) =
   ## Does nothing for directed graphs.
   if not G.isDirected: G.pred = copy G.pred
 
-proc setUndirected*[T](G: Graph[T]) =
+proc setUndirected*(G) =
   ## For directed graphs, this adds all predecessors
   ## to the successors adjacency list. If v was a predecessor
   ## to u in the directed graph, the edge (u, v) will be in the
@@ -239,7 +246,7 @@ proc setUndirected*[T](G: Graph[T]) =
 
     G.pred = G.succ
 
-proc reverse*[T](G: Graph[T]) =
+proc reverse*(G) =
   ## Reverse edges in a directed graph in O(1).
   ## Does nothing for undirected graphs.
   swap(G.succ, G.pred)
