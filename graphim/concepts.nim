@@ -5,7 +5,7 @@ type
     hash h is int
 
   NodeStorage*[T: Hashable] = concept n
-    # T in n is bool  # Doesn't pick up HashSet's contain
+    n.has(T) is bool
     for node in n.nodes: node is T
     n.order is int
     n.addNode T
@@ -13,7 +13,7 @@ type
     n.clear
 
   EdgeStorage*[T: Hashable] = concept e
-    e.contains((T, T)) is bool
+    (T, T) in e is bool
     for node in e.successors(T): node is T
     for edge in e.edges: edge is (T, T)
     e.isDirected is bool
@@ -54,7 +54,7 @@ template makeGraphImpl*(T: Hashable, N, E: untyped): untyped {.dirty.} =
     G.edgestorage.isDirected
 
   proc contains*(G; node: T): bool =
-    node in G.nodestorage
+    G.nodestorage.has node
 
   proc contains*(G; edge: (T, T)): bool =
     edge in G.edgestorage

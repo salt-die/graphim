@@ -9,3 +9,5 @@ G.addEdge (1, 3)
 echo G
 G.removeEdge (3, 1)
 echo G
+clear G
+echo G

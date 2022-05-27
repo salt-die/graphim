@@ -1,16 +1,14 @@
 import std/[tables, sets]
 import concepts
 
-type
-  EdgeTableSet*[T: Hashable] = Table[T, HashSet[T]]
+type EdgeTableSet*[T: Hashable] = Table[T, HashSet[T]]
 
 proc contains*[T](edges: EdgeTableSet[T], edge: (T, T)): bool =
   let (u, v) = edge
   u in edges and v in edges[u]
 
 iterator successors*[T](edges: EdgeTableSet[T], node: T): T =
-  for neighbor in edges[node].items:
-    yield neighbor
+  for neighbor in edges[node].items: yield neighbor
 
 iterator edges*[T](edges: EdgeTableSet[T]): (T, T) =
   var seen = HashSet[(T, T)]()
@@ -20,8 +18,7 @@ iterator edges*[T](edges: EdgeTableSet[T]): (T, T) =
         seen.incl (node, neighbor)
         yield (node, neighbor)
 
-proc isDirected*[T](edges: EdgeTableSet[T]): bool =
-  false
+proc isDirected*[T](edges: EdgeTableSet[T]): bool = false
 
 proc outDegree*[T](edges: EdgeTableSet[T], node: T): int =
   edges[node].len + (
@@ -57,5 +54,4 @@ proc removeEdge*[T](edges: var EdgeTableSet[T], edge: (T, T)) =
     edges[u].excl v
     edges[v].excl u
 
-proc clearEdges*[T](edges: var EdgeTableSet[T]) =
-  clear edges
+proc clearEdges*(edges: var EdgeTableSet) = clear edges
