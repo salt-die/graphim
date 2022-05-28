@@ -1,3 +1,4 @@
+## Undirected adjacency set implementation.
 import std/[tables, sets]
 import concepts
 

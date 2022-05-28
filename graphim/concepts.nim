@@ -1,3 +1,13 @@
+## To model directed, undirected, weighted, colored and all the other sorts of
+## graphs, a graph implementation may be constructed from any hashable type as
+## a node and any structures satisfying `NodeStorage` and `EdgeStorage`.
+##
+## Depending on the `NodeStorage` and `EdgeStorage`, similar operations on a graph
+## can have many different time or memory complexities.
+##
+## When `NodeStorage` or `EdgeStorage` are aliases for stdlib collections, requiring
+## stdlib procs (such as `contains` or `items`) in the concepts prevented compilation.
+## Concepts now require aliases for these procs instead, e.g., `has` for `contains`.
 import std/hashes
 
 type
@@ -31,10 +41,9 @@ template makeGraphImpl*(T: Hashable, N, E: untyped): untyped {.dirty.} =
 
   import std/[sets, strformat, tables]
 
-  type
-    Graph* = object
-      nodestorage: N[T]
-      edgestorage: E[T]
+  type Graph* = object
+    nodestorage: N[T]
+    edgestorage: E[T]
 
   proc newGraph*: Graph =
     Graph(nodestorage: N[T](), edgestorage: E[T]())

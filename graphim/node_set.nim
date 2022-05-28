@@ -1,3 +1,4 @@
+## Simple HashSet implementation of NodeStorage.
 import std/sets
 import concepts
 
