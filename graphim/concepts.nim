@@ -39,11 +39,23 @@ template makeGraphImpl*(T: Hashable, N, E: untyped): untyped {.dirty.} =
   assert N[T] is NodeStorage
   assert E[T] is EdgeStorage
 
-  import std/[sets, strformat, tables]
+  import std/[sequtils, sets, strformat, strutils, tables]
 
-  type Graph* = object
-    nodestorage: N[T]
-    edgestorage: E[T]
+  type
+    Graph* = object
+      nodestorage: N[T]
+      edgestorage: E[T]
+
+    Node = object
+      ## Descriptor for a node in a graph.
+      ## Instead of `G.successors(node)`, where
+      ## G is a graph and node is a T, descriptor
+      ## allows `node.successors()` where node is a Node.
+      value: T
+      graph: ptr Graph
+
+    NeighborView = object
+      origin: Node
 
   proc newGraph*: Graph =
     Graph(nodestorage: N[T](), edgestorage: E[T]())
@@ -70,6 +82,35 @@ template makeGraphImpl*(T: Hashable, N, E: untyped): untyped {.dirty.} =
 
   proc outDegree*(G; node: T): int =
     G.edgestorage.outDegree node
+
+  proc `[]`*(G; node: T): Node =
+    Node(value: node, graph: unsafeAddr G)
+
+  iterator successors*(node: Node): Node =
+    for succ in node.graph[].successors(node.value):
+      yield Node(value: succ, graph: node.graph)
+
+  proc outDegree*(node: Node): int =
+    node.graph[].outDegree node.value
+
+  proc neighbors*(node: Node): NeighborView =
+    NeighborView(origin: node)
+
+  proc contains*(neighbors: NeighborView, node: Node): bool =
+    (neighbors.origin.value, node.value) in neighbors.origin.graph[]
+
+  proc contains*(neighbors: NeighborView, node: T): bool =
+    (neighbors.origin.value, node) in neighbors.origin.graph[]
+
+  proc `$`*(node: Node): string =
+    fmt"Node({node.value})"
+
+  proc `$`*(neighbors: NeighborView): string =
+    let
+      node = neighbors.origin.value
+      G = neighbors.origin.graph[]
+      s = G.successors(node).toSeq.join(", ")
+    fmt"NeighborView({node}, {{{s}}})"
 
   proc degreeHistogram*(G): CountTable[int] =
     for node in G.nodestorage.nodes: result.inc G.outDegree(node)

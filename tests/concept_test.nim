@@ -1,4 +1,4 @@
-import std/[sequtils, strutils, sugar]
+import std/sugar
 import ../graphim/[concepts, node_set, edge_table_set]
 
 makeGraphImpl(int, NodeSet, EdgeTableSet)
@@ -39,3 +39,7 @@ G.addEdgesFrom [
   (9, 6),
 ]  # Peterson graph.
 display G
+
+echo G[0].neighbors
+for node in G[0].successors:
+  echo node
