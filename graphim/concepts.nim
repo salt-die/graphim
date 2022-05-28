@@ -51,8 +51,11 @@ template makeGraphImpl*(T: Hashable, N, E: untyped): untyped {.dirty.} =
       ## Instead of `G.successors(node)`, where
       ## G is a graph and node is a T, descriptor
       ## allows `node.successors()` where node is a Node.
+      ##
+      ## To obtain a node descriptor, use `[]` on G with
+      ## node value.
       value: T
-      graph: ptr Graph
+      graph: ref Graph
 
     NeighborView = object
       origin: Node
@@ -84,7 +87,9 @@ template makeGraphImpl*(T: Hashable, N, E: untyped): untyped {.dirty.} =
     G.edgestorage.outDegree node
 
   proc `[]`*(G; node: T): Node =
-    Node(value: node, graph: unsafeAddr G)
+    let newG = new Graph
+    newG[] = G
+    Node(value: node, graph: newG)
 
   iterator successors*(node: Node): Node =
     for succ in node.graph[].successors(node.value):
